@@ -19,139 +19,209 @@
 #include "main.h"
 
 CRC_HandleTypeDef hcrc;
-I2C_HandleTypeDef hi2c1;
-SPI_HandleTypeDef hspi1;
-UART_HandleTypeDef uart_out;
 
-unsigned int address = 0x01;
+static uint8_t __address = 0x01;
 
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_CRC_Init(void);
-static void MX_I2C1_Init(void);
-static void MX_SPI1_Init(void);
-static void MX_USART1_UART_Init(void);
-
-/*Device section*/
-uint8_t send_status(void);
-void halt(void);
-uint16_t get_address(void);
-void set_address(uint16_t value);
-
-/*Motor section*/
-/*FIXME : move to motor.h*/
-uint16_t get_rotation_angle(void);
-void set_rotation_angle(uint8_t value);
+void sysclock_conf(void);
+static void gpio_init(void);
+static void crc_init(void);
+static void halt(void);
+static void reset(void);
 
 /**
- * @brief The application entry point.
- * @retval int
+ * 
  */
 int main(void)
 {
-	package received_package;
-	unsigned long lidar_package;
-	uint8_t command = 0;
+	uint8_t result;							// Package waiting result
+	lidar_package package;					// Device package 
+	lidar_state device_state;				// Device state
+	tfmini_state sensor_state;				// Sensor state
+	tfmini_package sensor_package;			// Sensor data package
 
 	/* Reset of all peripherals, Initializes the Flash interface and the Systick. */
 	HAL_Init();
 
 	/* Configure the system clock */
-	SystemClock_Config();
+	sysclock_conf();
 
 	/* Initialize all configured peripherals */
-	MX_GPIO_Init();
-	MX_CRC_Init();
-	MX_I2C1_Init();
-	MX_SPI1_Init();
-	MX_USART1_UART_Init();
+	gpio_init();
+	crc_init();
+	lidar_init();
 	tfmini_init();
 
 	while (1)
 	{
-		/* FIXME : move to the function named "package_wait" */
-		/* If there is a transfer on the line, receive the command */
-		if (__HAL_UART_GET_FLAG(&uart_out, UART_FLAG_RXNE) == SET)
+		/* Wait for the command to start executing */
+		result = lidar_wait();
+		if (result == -1) 
 		{
-			received_package = get_package(&uart_out);
+			/* Send error to the sender */
+			package.size = 1;
+			package.data = RSP_CMD_ERR;
+			lidar_send_package(package);
 		}
+		package = lidar_get_package();
 
 		/* Check if the address is correct */
-		if (address != received_package.address)
+		if (__address != package.address)
 		{
-
+			/* Don't do anything */
+			continue;
 		}
 
-		/* Check if the CRC is correct */
-
 		/* Decode the command */
-		switch (received_package.command) {
+		switch (package.command) {
 			case CMD_STATUS_CHECK:
-				/*send_status();*/
+				device_state = lidar_get_state();
+				package.size = 1;
+				package.data = device_state.status;
+
 				break;
 
 			case CMD_SENSOR_STATUS_CHECK:
-				/*send_sensor_status();*/
+				sensor_state = tfmini_get_state();
+				package.size = 1;
+				package.data = sensor_state.status;
+
 				break;
 
 			case CMD_HALT:
-				/*halt();*/
+				/* Stop the execution */
+				halt();
+
+				/* Create a  response */
+				package.size = 1;
+				package.data = RSP_CMD_DONE;
+
 				break;
 
 			case CMD_RESET:
-				/*sensor_reset();*/
+				/* Stop the execution */
+				reset();
+
+				/* Create a  response */
+				package.size = 1;
+				package.data = RSP_CMD_DONE;
+
 				break;
 
 			case CMD_GET_SAMPLE_RATE:
-				/*get_sample_rate();*/
+				sensor_state = tfmini_get_state();
+				package.size = 2;
+				package.data = sensor_state.sample_rate;
+
 				break;
 
 			case CMD_SET_SAMPLE_RATE:
-				/*set_sample_rate();*/
-				break;
+				/* Update the parameter */
+				sensor_state = tfmini_get_state();
+				sensor_state.sample_rate = package.data;
+				tfmini_set_state(sensor_state);
 
-			case CMD_SET_MODE:
-				/*set_mode();*/
+				/* Set the response */
+				package.size = 1;
+				package.data = RSP_CMD_DONE;
+
 				break;
 
 			case CMD_GET_MAX_DIST:
-				/*get_max_distance();*/
+				sensor_state = tfmini_get_state();
+				package.size = 2;
+				package.data = sensor_state.max_distance;
+
 				break;
 
 			case CMD_SET_MAX_DIST:
-				/*set_max_distance();*/
+				/* Update the parameter */
+				sensor_state = tfmini_get_state();
+				sensor_state.max_distance = package.data;
+				tfmini_set_state(sensor_state);
+
+				/* Set the response */
+				package.size = 1;
+				package.data = RSP_CMD_DONE;
+
+				break;
 
 			case CMD_GET_ROT_ANGLE:
-				/*get_rotation_angle();*/
 				break;
 
 			case CMD_SET_ROT_ANGLE:
-				/*set_rotation_angle();*/
 				break;
 
 			case CMD_GET_ADDR:
-				/*get_address();*/
+				package.size = 1;
+				package.data = (uint64_t) __address;
+
 				break;
 
 			case CMD_SET_ADDR:
-				/*set_address();*/
+				/* Set the new address*/
+				__address = (uint8_t) package.address;
+
+				/* Set response package data */
+				package.size = 1;
+				package.data = RSP_CMD_DONE;
+
 				break;
 
+			case CMD_SENSOR_GET_READING:
+				/* Get data from the sensor */
+				result = tfmini_wait();
+				if (result == -1) 
+				{
+					/* Send error to the sender */
+					package.size = 1;
+					package.data = RSP_CMD_ERR;
+
+					break;
+				}
+				sensor_package = tfmini_get_package();
+
+				/* Create a response  with data*/
+				package.size = 4;
+				package.data = (sensor_package.distance << 16) | sensor_package.strength;
+
+				break;
+
+			case CMD_SENSOR_GET_TEMP:
+				/* Get data from the sensor */
+				result = tfmini_wait();
+				if (result == -1) 
+				{
+					/* Send error to the sender */
+					package.size = 1;
+					package.data = RSP_CMD_ERR;
+
+					break;
+				}
+				sensor_package = tfmini_get_package();
+
+				/* Create a response  with data*/
+				package.size = 2;
+				package.data = sensor_package.temperature;
+
+				break;
+
+			/* Send an error if the command was not recognized */
 			default :
-				/* TODO */
+				package.size = 1;
+				package.data = RSP_CMD_ERR;
+
 				break;
 		}
 
-		/*Reset the command*/
-		command = 0;
+		/* Send the package to the main devjce */
+		lidar_send_package(package);
 	}
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
+ * 
  */
-void SystemClock_Config(void)
+void sysclock_conf(void)
 {
 	RCC_OscInitTypeDef RCC_OscInitStruct = {0};
 	RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
@@ -165,7 +235,7 @@ void SystemClock_Config(void)
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
 	{
-		Error_Handler();
+		error_handler();
 	}
 	/** Initializes the CPU, AHB and APB buses clocks
 	*/
@@ -178,29 +248,27 @@ void SystemClock_Config(void)
 
 	if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
 	{
-		Error_Handler();
+		error_handler();
 	}
 }
 
 /**
- * @brief CRC Initialization Function
- * @param None
- * @retval None
+ * 
  */
-static void MX_CRC_Init(void)
+static void crc_init(void)
 {
 	hcrc.Instance = CRC;
 	if (HAL_CRC_Init(&hcrc) != HAL_OK)
 	{
-		Error_Handler();
+		error_handler();
 	}
 }
 
+/* FIXME : move to lidar.h */
 /**
- * @brief I2C1 Initialization Function
- * @param None
- * @retval None
+ * 
  */
+/*
 static void MX_I2C1_Init(void)
 {
 	hi2c1.Instance = I2C1;
@@ -217,15 +285,15 @@ static void MX_I2C1_Init(void)
 		Error_Handler();
 	}
 }
+*/
 
+/* FIXME : move to lidar.h */
 /**
- * @brief SPI1 Initialization Function
- * @param None
- * @retval None
+ * 
  */
+/*
 static void MX_SPI1_Init(void)
 {
-	/* SPI1 parameter configuration*/
 	hspi1.Instance = SPI1;
 	hspi1.Init.Mode = SPI_MODE_MASTER;
 	hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -243,45 +311,39 @@ static void MX_SPI1_Init(void)
 		Error_Handler();
 	}
 }
+*/
 
 /**
- * @brief USART1 Initialization Function
- * @param None
- * @retval None
+ * 
  */
-static void MX_USART1_UART_Init(void)
-{
-	uart_out.Instance = USART1;
-	uart_out.Init.BaudRate = 115200;
-	uart_out.Init.WordLength = UART_WORDLENGTH_8B;
-	uart_out.Init.StopBits = UART_STOPBITS_1;
-	uart_out.Init.Parity = UART_PARITY_NONE;
-	uart_out.Init.Mode = UART_MODE_TX_RX;
-	uart_out.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	uart_out.Init.OverSampling = UART_OVERSAMPLING_16;
-	if (HAL_UART_Init(&uart_out) != HAL_OK)
-	{
-		Error_Handler();
-	}
-}
-
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void)
+static void gpio_init(void)
 {
 	/* GPIO Ports Clock Enable */
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 }
 
+static void halt(void)
+{
+	/* Stop the motor */
+
+	/* Change the state of the device */
+
+}
+
+static void reset(void)
+{
+	/* Stop the device */
+	halt();
+
+	/* Set settings to default */
+	tfmini_reset();
+}
+
 /**
- * @brief	This function is executed in case of error occurrence.
- * @retval None
+ * 
  */
-void Error_Handler(void)
+void error_handler(void)
 {
 	/* User can add his own implementation to report the HAL error return state */
 	__disable_irq();
