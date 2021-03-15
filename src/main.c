@@ -18,7 +18,7 @@
 
 #include "main.h"
 
-CRC_HandleTypeDef hcrc;
+CRC_HandleTypeDef __crc;
 
 static uint8_t __address = 0x01;
 
@@ -29,7 +29,8 @@ static void halt(void);
 static void reset(void);
 
 /**
- * 
+ * STM32 software entry point
+ * @return exit code
  */
 int main(void)
 {
@@ -221,7 +222,7 @@ int main(void)
 }
 
 /**
- * 
+ * Configure clock parameters of the internal clock source
  */
 void sysclock_conf(void)
 {
@@ -255,19 +256,19 @@ void sysclock_conf(void)
 }
 
 /**
- * 
+ * Initialize internal CRC module
  */
 static void crc_init(void)
 {
-	hcrc.Instance = CRC;
-	if (HAL_CRC_Init(&hcrc) != HAL_OK)
+	__crc.Instance = CRC;
+	if (HAL_CRC_Init(&__crc) != HAL_OK)
 	{
 		error_handler();
 	}
 }
 
 /**
- * 
+ * Initialize chip's GPIO
  */
 static void gpio_init(void)
 {
@@ -276,6 +277,9 @@ static void gpio_init(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 }
 
+/**
+ * Halt execution of current tasks
+ */
 static void halt(void)
 {
 	/* Stop the motor */
@@ -284,6 +288,9 @@ static void halt(void)
 
 }
 
+/**
+ * Reset the device to the original state
+ */
 static void reset(void)
 {
 	/* Stop the device */
@@ -294,7 +301,7 @@ static void reset(void)
 }
 
 /**
- * 
+ * Global error handler
  */
 void error_handler(void)
 {

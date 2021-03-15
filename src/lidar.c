@@ -7,7 +7,7 @@ static lidar_package 		__lidar_data;
 static lidar_state			__lidar_state;
 
 /**
- * 
+ * Setup UART interface
  */
 void lidar_uart_init(void)
 {
@@ -26,11 +26,17 @@ void lidar_uart_init(void)
 }
 
 /**
- * 
+ * Waiting for the package from the master device
+ * @return 0 if there was no errors, -1 otherwise
  */
 uint8_t lidar_wait(void) {
-	/* FIXME : use the timeout */
-	while (1) 
+	/* Set timer to create timeout */
+	TIM1->PSC = 0;
+	TIM1->ARR = 0xFFFF;
+	TIM1->CR1 |= TIM_CR1_CEN;
+	TIM1->CNT = 0u;
+
+	while (TIM1->CNT < 8000u)
 	{
 		if (__HAL_UART_GET_FLAG(&__lidar_uart, UART_FLAG_RXNE) == SET)
 		{
@@ -49,13 +55,14 @@ uint8_t lidar_wait(void) {
 	}
 
 	/* Call the error handler */
+	error_handler();
 
 	/* Indicating an error */
 	return -1;
 }
 
 /**
- * 
+ * Receive packaged data from the master device
  */
 static void __lidar_receive_package(void) 
 {
@@ -69,7 +76,8 @@ static void __lidar_receive_package(void)
 }
 
 /**
- * 
+ * Get current package
+ * @return the last received package
  */
 lidar_package lidar_get_package(void) 
 {
@@ -78,7 +86,8 @@ lidar_package lidar_get_package(void)
 }
 
 /**
- * 
+ * Send data to the master device
+ * @param value the package to send
  */
 void lidar_send_package(lidar_package value)
 {
@@ -91,7 +100,8 @@ void lidar_send_package(lidar_package value)
 }
 
 /**
- * 
+ * Calculate the checksum
+ * @return checksum of the current package
  */
 static unsigned int __lidar_calculate_checksum(void) 
 {
@@ -100,13 +110,17 @@ static unsigned int __lidar_calculate_checksum(void)
 	return checksum;
 }
 
+/**
+ * Get device's status and settings
+ * @return the struct with data about the device
+ */
 lidar_state lidar_get_state(void) 
 {
 	return __lidar_state;
 }
 
 /**
- * 
+ * SPI initialization
  */
 void lidar_spi_init(void)
 {
@@ -129,7 +143,7 @@ void lidar_spi_init(void)
 }
 
 /**
- * 
+ * 12C initialization
  */
 void lidar_i2c_init(void)
 {
@@ -144,6 +158,6 @@ void lidar_i2c_init(void)
 	__lidar_i2c.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
 	if (HAL_I2C_Init(&__lidar_i2c) != HAL_OK)
 	{
-		Error_Handler();
+		error_handler();
 	}
 }

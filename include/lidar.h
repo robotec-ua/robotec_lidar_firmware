@@ -24,7 +24,7 @@ typedef struct {
 } lidar_package ;
 
 typedef struct {
-	uint8_t status;
+	uint8_t 		status;
 } lidar_state;
 
 void lidar_uart_init(void);
