@@ -27,7 +27,9 @@ typedef struct {
 	uint8_t status;
 } lidar_state;
 
-void lidar_init(void);
+void lidar_uart_init(void);
+void lidar_spi_init(void);
+void lidar_i2c_init(void);
 uint8_t lidar_wait(void);
 static void __lidar_receive_package(void);
 static unsigned int __lidar_calculate_checksum(void);

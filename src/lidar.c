@@ -9,7 +9,7 @@ static lidar_state			__lidar_state;
 /**
  * 
  */
-void lidar_init(void)
+void lidar_uart_init(void)
 {
 	__lidar_uart.Instance = USART1;
 	__lidar_uart.Init.BaudRate = 115200;
@@ -103,4 +103,47 @@ static unsigned int __lidar_calculate_checksum(void)
 lidar_state lidar_get_state(void) 
 {
 	return __lidar_state;
+}
+
+/**
+ * 
+ */
+void lidar_spi_init(void)
+{
+	__lidar_spi.Instance = SPI1;
+	__lidar_spi.Init.Mode = SPI_MODE_MASTER;
+	__lidar_spi.Init.Direction = SPI_DIRECTION_2LINES;
+	__lidar_spi.Init.DataSize = SPI_DATASIZE_8BIT;
+	__lidar_spi.Init.CLKPolarity = SPI_POLARITY_LOW;
+	__lidar_spi.Init.CLKPhase = SPI_PHASE_1EDGE;
+	__lidar_spi.Init.NSS = SPI_NSS_SOFT;
+	__lidar_spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+	__lidar_spi.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	__lidar_spi.Init.TIMode = SPI_TIMODE_DISABLE;
+	__lidar_spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	__lidar_spi.Init.CRCPolynomial = 10;
+	if (HAL_SPI_Init(&__lidar_spi) != HAL_OK)
+	{
+		error_handler();
+	}
+}
+
+/**
+ * 
+ */
+void lidar_i2c_init(void)
+{
+	__lidar_i2c.Instance = I2C1;
+	__lidar_i2c.Init.ClockSpeed = 100000;
+	__lidar_i2c.Init.DutyCycle = I2C_DUTYCYCLE_2;
+	__lidar_i2c.Init.OwnAddress1 = 0;
+	__lidar_i2c.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+	__lidar_i2c.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+	__lidar_i2c.Init.OwnAddress2 = 0;
+	__lidar_i2c.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+	__lidar_i2c.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+	if (HAL_I2C_Init(&__lidar_i2c) != HAL_OK)
+	{
+		Error_Handler();
+	}
 }

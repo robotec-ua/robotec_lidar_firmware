@@ -36,33 +36,33 @@ BUILD_DIR = build
 ######################################
 # C sources
 C_SOURCES =  \
-Core/Src/main.c \
-Core/Src/lidar.c \
-Core/Src/tfmini.c \
-Core/Src/stm32f1xx_it.c \
-Core/Src/stm32f1xx_hal_msp.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_crc.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
-Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c \
-Core/Src/system_stm32f1xx.c  
+src/main.c \
+src/lidar.c \
+src/tfmini.c \
+src/stm32f1xx_it.c \
+src/stm32f1xx_hal_msp.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_crc.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
+lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_uart.c \
+src/system_stm32f1xx.c  
 
 # ASM sources
 ASM_SOURCES =  \
-startup_stm32f103xb.s
+src/startup_stm32f103xb.s
 
 
 #######################################
@@ -115,12 +115,12 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--ICore/Inc \
--IDrivers/STM32F1xx_HAL_Driver/Inc \
--IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
--IDrivers/CMSIS/Include \
--IDrivers/CMSIS/Include
+-Iinclude \
+-Ilib/STM32F1xx_HAL_Driver/Inc \
+-Ilib/STM32F1xx_HAL_Driver/Inc/Legacy \
+-Ilib/CMSIS/Device/ST/STM32F1xx/Include \
+-Ilib/CMSIS/Include \
+-Ilib/CMSIS/Include
 
 
 # compile gcc flags
@@ -141,7 +141,7 @@ CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)"
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = STM32F103C8Tx_FLASH.ld
+LDSCRIPT = tools/STM32F103C8Tx_FLASH.ld
 
 # libraries
 LIBS = -lc -lm -lnosys 
