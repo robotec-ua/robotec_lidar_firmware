@@ -1,14 +1,14 @@
 #ifndef PACKAGE_H
 #define PACKAGE_H
 
-/**/
+/* Include C headers */
 #include <stdlib.h>
 #include <stdint.h>
 
-/**/
+/* Include STMicroelectronics headers */
 #include "stm32f1xx_hal.h"
 
-/**/
+/* Constants block */
 #define LIDAR_CMD_HEADER 0x52f3
 
 /**
@@ -23,6 +23,9 @@ typedef struct {
 	unsigned int 	data;			// Additional data needed by the devices
 } lidar_package ;
 
+/**
+ * Struct with the current sensor's state
+ */
 typedef struct {
 	uint8_t 		status;
 } lidar_state;

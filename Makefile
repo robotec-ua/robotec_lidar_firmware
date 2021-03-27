@@ -39,6 +39,7 @@ C_SOURCES =  \
 src/main.c \
 src/lidar.c \
 src/tfmini.c \
+src/motor.c \
 src/stm32f1xx_it.c \
 src/stm32f1xx_hal_msp.c \
 lib/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \

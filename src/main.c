@@ -47,11 +47,12 @@ int main(void)
 	sysclock_conf();
 
 	/* Initialize all configured peripherals */
+	motor_init();
 	gpio_init();
 	crc_init();
 	tfmini_init();
 
-	// FIXME : check the parameters and use the appropriate  
+	// FIXME : check the parameters and use the appropriate protocol  
 	lidar_uart_init();
 
 	while (1)
